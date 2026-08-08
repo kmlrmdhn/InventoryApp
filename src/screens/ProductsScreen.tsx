@@ -174,7 +174,7 @@ function DetailModal({
                 ))
               )}
 
-              {!isSatuanMode && (
+              {true && (
                 <View
                   style={[
                     ms.gridItem,
@@ -200,8 +200,7 @@ function DetailModal({
               )}
             </View>
 
-            {/* Jual (Hanya Mode Batch) */}
-            {!isSatuanMode && calc.remainingStock > 0 && (
+            {calc.remainingStock > 0 && (
               <View style={ms.sellBox}>
                 <Text style={ms.sellLabel}>Catat Penjualan</Text>
                 <View style={ms.sellRow}>
@@ -293,7 +292,7 @@ export default function ProductsScreen() {
         <View style={ps.info}>
           <View style={ps.titleRow}>
             <Text style={ps.name} numberOfLines={1}>{item.name}</Text>
-            {!isSatuanMode && (
+            {true && (
               item.soldStock > 0 ? (
                 <View style={[ps.statusTag, calc.remainingStock === 0 ? ps.tagLunas : ps.tagSold]}>
                   <Text style={[ps.statusTagTxt, calc.remainingStock === 0 ? ps.tagLunasTxt : ps.tagSoldTxt]}>
@@ -317,7 +316,7 @@ export default function ProductsScreen() {
           {item.sellPrice > 0 && (
             <View style={ps.priceRow}>
               <Text style={ps.sellPrice}>Harga Jual: {formatRupiah(item.sellPrice)} / {item.unit}</Text>
-              {!isSatuanMode && item.soldStock > 0 && (
+              {item.soldStock > 0 && (
                 <Text style={ps.soldRevenueTxt}>
                   Terkumpul: {formatRupiah(calc.totalRevenue)}
                 </Text>
@@ -325,7 +324,7 @@ export default function ProductsScreen() {
             </View>
           )}
 
-          {!isSatuanMode && (
+          {true && (
             <View style={ps.stockRow}>
               <View style={[ps.stockBadge, calc.remainingStock === 0 && {backgroundColor: C.danger + '22'}]}>
                 <Text style={[ps.stockTxt, calc.remainingStock === 0 && {color: C.danger}]}>

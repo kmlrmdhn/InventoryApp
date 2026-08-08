@@ -386,13 +386,32 @@ export const useProductStore = create<ProductState>()(
         sellProduct: (productId, quantity) => {
           const now = new Date().toISOString();
           set((state) =>
-            syncActiveDashboard(state, (dash) => ({
-              products: dash.products.map((p) =>
-                p.id === productId
-                  ? { ...p, soldStock: p.soldStock + quantity, updatedAt: now }
-                  : p,
-              ),
-            })),
+            syncActiveDashboard(state, (dash) => {
+              const product = dash.products.find(p => p.id === productId);
+              if (!product) return {};
+              
+              const unitBuyPrice = product.initialStock > 0 ? product.buyPrice / product.initialStock : product.buyPrice;
+              const transaction: Transaction = {
+                id: `trx-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                productId: product.id,
+                productName: product.name,
+                quantity,
+                buyPrice: unitBuyPrice,
+                sellPrice: product.sellPrice,
+                profit: (product.sellPrice - unitBuyPrice) * quantity,
+                type: 'sale',
+                date: now,
+              };
+
+              return {
+                products: dash.products.map((p) =>
+                  p.id === productId
+                    ? { ...p, soldStock: p.soldStock + quantity, updatedAt: now }
+                    : p,
+                ),
+                transactions: [transaction, ...(dash.transactions || [])],
+              };
+            }),
           );
         },
 

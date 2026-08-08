@@ -48,9 +48,16 @@ export function calculateDashboard(
   if (mode === 'satuan') {
     products.forEach(product => {
       calculatedModal += product.buyPrice;
+      if (product.soldStock > 0 && product.sellPrice > 0) {
+        totalRevenue += product.sellPrice * product.soldStock;
+      }
+      if (product.soldStock > 0) {
+        totalSoldItems += product.soldStock;
+      }
+      totalRemainingStock += Math.max(0, product.initialStock - product.soldStock);
     });
     const inputsTotal = salesInputs ? salesInputs.reduce((sum, item) => sum + item.amount, 0) : 0;
-    totalRevenue = (manualTotalSales ?? 0) + inputsTotal;
+    totalRevenue += (manualTotalSales ?? 0) + inputsTotal;
   } else {
     products.forEach(product => {
       const calc = calculateProduct(product);
