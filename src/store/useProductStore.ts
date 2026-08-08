@@ -301,6 +301,9 @@ export const useProductStore = create<ProductState>()(
               batchHistory: [newHistoryItem, ...(dash.batchHistory || [])],
               customTotalModal: null,
               products: [],
+              transactions: [],
+              manualTotalSales: null,
+              salesInputs: [],
             })),
           );
         },
