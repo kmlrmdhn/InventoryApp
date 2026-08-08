@@ -28,6 +28,7 @@ export function useProducts() {
   const editProduct = useProductStore((state) => state.editProduct);
   const removeProduct = useProductStore((state) => state.removeProduct);
   const sellProduct = useProductStore((state) => state.sellProduct);
+  const undoSellProduct = useProductStore((state) => state.undoSellProduct);
   const setCustomTotalModal = useProductStore((state) => state.setCustomTotalModal);
   const setManualTotalSales = useProductStore((state) => state.setManualTotalSales);
   const completeBatch = useProductStore((state) => state.completeBatch);
@@ -63,6 +64,7 @@ export function useProducts() {
     editProduct: async (product: Product) => editProduct(product),
     removeProduct: async (id: string) => removeProduct(id),
     sellProduct: async (productId: string, quantity: number) => sellProduct(productId, quantity),
+    undoSellProduct: async (productId: string, quantity: number) => undoSellProduct(productId, quantity),
     setCustomTotalModal: (amount: number | null) => setCustomTotalModal(amount),
     setManualTotalSales: (amount: number | null) => setManualTotalSales(amount),
     completeBatch: (summary: DashboardSummary, batchName?: string) => completeBatch(summary, batchName),

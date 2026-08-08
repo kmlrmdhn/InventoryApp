@@ -69,3 +69,8 @@ coverage/
 
 # Misc
 .gemini/
+
+# Expo
+.expo
+dist/
+web-build/

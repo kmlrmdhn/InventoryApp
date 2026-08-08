@@ -624,35 +624,58 @@ export default function DashboardScreen() {
         </View>
 
         {activeMode === 'satuan' && (
-          <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
-            <Text style={[s.sectionTitle, { color: C.satuan, paddingHorizontal: 0 }]}>📜 RIWAYAT INPUT PENJUALAN SATUAN</Text>
-            {salesInputs && salesInputs.length > 0 ? (
-              salesInputs.map((input: SalesInput) => (
-                <View key={input.id} style={s.salesInputCard}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.salesInputDate}>
-                      {new Date(input.date).toLocaleDateString('id-ID', {
-                        day: 'numeric', month: 'short', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </Text>
-                    <Text style={s.salesInputVal}>{formatRupiah(input.amount)}</Text>
+          <View style={{ marginTop: 24 }}>
+            <Text style={[s.sectionTitle, { color: C.satuan, marginTop: 0 }]}>📜 RIWAYAT INPUT PENJUALAN SATUAN</Text>
+            {(() => {
+              const combinedHistory = [];
+              if (salesInputs) {
+                combinedHistory.push(...salesInputs.map(si => ({ ...si, recordType: 'manual' as const })));
+              }
+              if (activeDashboard?.transactions) {
+                combinedHistory.push(...activeDashboard.transactions.map(tx => ({
+                  id: tx.id,
+                  amount: tx.sellPrice * tx.quantity,
+                  date: tx.date,
+                  recordType: 'product' as const,
+                  name: tx.productName,
+                  qty: tx.quantity
+                })));
+              }
+              combinedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+              return combinedHistory.length > 0 ? (
+                combinedHistory.map((item) => (
+                  <View key={item.id} style={s.salesInputCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.salesInputDate}>
+                        {item.recordType === 'manual' ? 'Manual Input • ' : `Barang: ${item.name} (${item.qty}x) • `}
+                        {new Date(item.date).toLocaleDateString('id-ID', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </Text>
+                      <Text style={s.salesInputVal}>{formatRupiah(item.amount)}</Text>
+                    </View>
+                    {item.recordType === 'manual' && (
+                      <>
+                        <TouchableOpacity style={s.salesInputEditBtn} onPress={() => handleOpenEditSalesModal(item.id, item.amount)}>
+                          <Text style={s.salesInputEditTxt}>✏️</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={s.salesInputDelBtn} onPress={() => handleDeleteSalesInput(item.id)}>
+                          <Text style={s.salesInputDelTxt}>🗑</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
-                  <TouchableOpacity style={s.salesInputEditBtn} onPress={() => handleOpenEditSalesModal(input.id, input.amount)}>
-                    <Text style={s.salesInputEditTxt}>✏️</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.salesInputDelBtn} onPress={() => handleDeleteSalesInput(input.id)}>
-                    <Text style={s.salesInputDelTxt}>🗑</Text>
-                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={s.historyEmptyCard}>
+                  <Text style={s.historyEmptyIcon}>📝</Text>
+                  <Text style={s.historyEmptyTitle}>Belum Ada Riwayat Penjualan</Text>
+                  <Text style={s.historyEmptyTxt}>Input manual atau jual barang untuk melihat riwayat.</Text>
                 </View>
-              ))
-            ) : (
-              <View style={s.historyEmptyCard}>
-                <Text style={s.historyEmptyIcon}>📝</Text>
-                <Text style={s.historyEmptyTitle}>Belum Ada Input Penjualan</Text>
-                <Text style={s.historyEmptyTxt}>Tambahkan input penjualan untuk melihat riwayatnya di sini.</Text>
-              </View>
-            )}
+              );
+            })()}
           </View>
         )}
 
@@ -1331,6 +1354,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: C.surface,
     padding: 12,
+    marginHorizontal: 24,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,

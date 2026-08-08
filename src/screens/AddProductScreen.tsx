@@ -73,7 +73,7 @@ export default function AddProductScreen() {
     if (!form.name.trim()) { Alert.alert('Error', 'Nama barang harus diisi!'); return; }
 
     if (isSatuanMode) {
-      if (!parsedBuyPrice) { Alert.alert('Error', 'Harga beli / modal barang harus diisi!'); return; }
+      if (!parsedSellPrice) { Alert.alert('Error', 'Harga jual / unit harus diisi!'); return; }
     } else {
       if (!parsedSellPrice) { Alert.alert('Error', 'Harga jual per unit harus diisi!'); return; }
       if (!form.initialStock) { Alert.alert('Error', 'Stok awal harus diisi!'); return; }
@@ -144,31 +144,29 @@ export default function AddProductScreen() {
             />
           </View>
 
-          {/* Modal / Harga Beli */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>💸 MODAL / HARGA BELI</Text>
-            <Text style={s.label}>
-              {isSatuanMode ? 'Harga Beli / Modal Barang *' : 'Total Modal Beli (Opsional)'}
-            </Text>
-            <View style={s.currencyBox}>
-              <Text style={s.currencyPrefix}>Rp</Text>
-              <TextInput
-                style={s.currencyInput}
-                placeholder="Masukkan Harga Beli Modal"
-                placeholderTextColor={C.muted}
-                value={form.buyPrice}
-                onChangeText={v => set('buyPrice', formatCurrencyInput(v))}
-                keyboardType="numeric"
-              />
+          {/* Modal / Harga Beli (Hanya di Mode Batch) */}
+          {!isSatuanMode && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>💸 MODAL / HARGA BELI</Text>
+              <Text style={s.label}>Total Modal Beli (Opsional)</Text>
+              <View style={s.currencyBox}>
+                <Text style={s.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={s.currencyInput}
+                  placeholder="Masukkan Harga Beli Modal"
+                  placeholderTextColor={C.muted}
+                  value={form.buyPrice}
+                  onChangeText={v => set('buyPrice', formatCurrencyInput(v))}
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Harga Jual */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>💰 HARGA JUAL</Text>
-            <Text style={s.label}>
-              {isSatuanMode ? 'Harga Jual / Unit (Opsional)' : 'Harga Jual / Unit *'}
-            </Text>
+            <Text style={s.label}>Harga Jual / Unit *</Text>
             <View style={s.currencyBox}>
               <Text style={s.currencyPrefix}>Rp</Text>
               <TextInput

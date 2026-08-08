@@ -1,4 +1,17 @@
 {
   "name": "InventoryApp",
-  "displayName": "InventoryApp"
+  "displayName": "InventoryApp",
+  "extra": {
+    "eas": {
+      "projectId": "f9945e3d-1158-440a-ae58-af6e6c82294e"
+    }
+  },
+  "owner": "kmlrmdhn",
+  "slug": "invetoryapp",
+  "runtimeVersion": "1.0.0",
+  "updates": {
+    "url": "https://u.expo.dev/f9945e3d-1158-440a-ae58-af6e6c82294e"
+  },
+  "android": {},
+  "ios": {}
 }

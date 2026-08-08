@@ -51,6 +51,7 @@ interface ProductState {
   editProduct: (product: Product) => void;
   removeProduct: (id: string) => void;
   sellProduct: (productId: string, quantity: number) => void;
+  undoSellProduct: (productId: string, quantity: number) => void;
   addTransaction: (transaction: Transaction) => void;
   getProductByBarcode: (barcode: string) => Product | null;
   setCustomTotalModal: (amount: number | null) => void;
@@ -410,6 +411,49 @@ export const useProductStore = create<ProductState>()(
                     : p,
                 ),
                 transactions: [transaction, ...(dash.transactions || [])],
+              };
+            }),
+          );
+        },
+
+        undoSellProduct: (productId, quantity) => {
+          const now = new Date().toISOString();
+          set((state) =>
+            syncActiveDashboard(state, (dash) => {
+              const product = dash.products.find(p => p.id === productId);
+              if (!product) return {};
+              
+              const actualQuantityToUndo = Math.min(product.soldStock, quantity);
+              if (actualQuantityToUndo <= 0) return {};
+
+              let remainingToUndo = actualQuantityToUndo;
+              let newTransactions = [...(dash.transactions || [])];
+              
+              for (let i = 0; i < newTransactions.length; i++) {
+                if (newTransactions[i].productId === productId && newTransactions[i].type === 'sale') {
+                  if (newTransactions[i].quantity <= remainingToUndo) {
+                     remainingToUndo -= newTransactions[i].quantity;
+                     newTransactions.splice(i, 1);
+                     i--; 
+                  } else {
+                     newTransactions[i] = {
+                       ...newTransactions[i],
+                       quantity: newTransactions[i].quantity - remainingToUndo,
+                       profit: (newTransactions[i].sellPrice - newTransactions[i].buyPrice) * (newTransactions[i].quantity - remainingToUndo)
+                     };
+                     remainingToUndo = 0;
+                  }
+                }
+                if (remainingToUndo <= 0) break;
+              }
+
+              return {
+                products: dash.products.map((p) =>
+                  p.id === productId
+                    ? { ...p, soldStock: p.soldStock - actualQuantityToUndo, updatedAt: now }
+                    : p,
+                ),
+                transactions: newTransactions,
               };
             }),
           );

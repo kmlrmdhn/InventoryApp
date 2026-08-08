@@ -42,10 +42,12 @@ function DetailModal({
   visible: boolean;
   onClose: () => void;
   onSell: (p: Product, qty: number) => void;
+  onUndo: (p: Product, qty: number) => void;
   onDelete: (id: string) => void;
   isSatuanMode?: boolean;
 }) {
   const [qty, setQty] = useState('1');
+  const [undoQty, setUndoQty] = useState('1');
   if (!product) {return null;}
   const calc = calculateProduct(product);
 
@@ -69,6 +71,34 @@ function DetailModal({
           onPress: () => {
             onSell(product, q);
             setQty('1');
+            onClose();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleUndo = () => {
+    const q = parseInt(undoQty, 10);
+    if (isNaN(q) || q <= 0) {
+      Alert.alert('Error', 'Masukkan jumlah yang valid');
+      return;
+    }
+    if (q > product.soldStock) {
+      Alert.alert('Error', `Jumlah batal melebihi jumlah terjual (${product.soldStock})`);
+      return;
+    }
+    Alert.alert(
+      'Konfirmasi Batal Jual',
+      `Batalkan penjualan ${q} ${product.unit} "${product.name}"?`,
+      [
+        {text: 'Batal', style: 'cancel'},
+        {
+          text: 'Batal Jual ↩️',
+          style: 'destructive',
+          onPress: () => {
+            onUndo(product, q);
+            setUndoQty('1');
             onClose();
           },
         },
@@ -140,7 +170,6 @@ function DetailModal({
             <View style={ms.grid}>
               {isSatuanMode ? (
                 [
-                  {label: 'Harga Beli / Modal Barang', val: formatRupiah(product.buyPrice || calc.totalModal), color: C.warning},
                   {label: 'Harga Jual / Unit', val: product.sellPrice > 0 ? formatRupiah(product.sellPrice) : '-', color: C.primary},
                 ].map((item, i) => (
                   <View key={i} style={[ms.gridItem, {width: '48%'}]}>
@@ -219,6 +248,25 @@ function DetailModal({
               </View>
             )}
 
+            {product.soldStock > 0 && (
+              <View style={[ms.sellBox, { borderColor: C.danger + '44', backgroundColor: C.danger + '11', marginTop: 12 }]}>
+                <Text style={[ms.sellLabel, { color: C.danger }]}>Kembalikan Penjualan (Batal Jual)</Text>
+                <View style={ms.sellRow}>
+                  <TextInput
+                    style={[ms.sellInput, { borderColor: C.danger + '44', color: C.text }]}
+                    value={undoQty}
+                    onChangeText={setUndoQty}
+                    keyboardType="numeric"
+                    placeholder="Jumlah Batal"
+                    placeholderTextColor={C.muted}
+                  />
+                  <TouchableOpacity style={[ms.sellBtn, { backgroundColor: C.danger }]} onPress={handleUndo}>
+                    <Text style={ms.sellBtnTxt}>↩️ Batal</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <TouchableOpacity style={ms.bottomCloseBtn} onPress={onClose}>
               <Text style={ms.bottomCloseTxt}>✕ Tutup Detail</Text>
             </TouchableOpacity>
@@ -231,7 +279,7 @@ function DetailModal({
 }
 
 export default function ProductsScreen() {
-  const {state, removeProduct, removeProducts, sellProduct} = useProducts();
+  const {state, removeProduct, removeProducts, sellProduct, undoSellProduct} = useProducts();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -241,15 +289,26 @@ export default function ProductsScreen() {
 
   const isSatuanMode = state.activeDashboard?.mode === 'satuan';
 
+  // State for filter tab: 'all' | 'unsold' | 'sold'
+  const [filterTab, setFilterTab] = useState<'all' | 'unsold' | 'sold'>('all');
+
   const filtered = useMemo(() => {
+    let result = state.products;
+    
+    if (filterTab === 'unsold') {
+      result = result.filter(p => p.soldStock === 0);
+    } else if (filterTab === 'sold') {
+      result = result.filter(p => p.soldStock > 0);
+    }
+
     const q = search.toLowerCase();
-    if (!q) {return state.products;}
-    return state.products.filter(
+    if (!q) {return result;}
+    return result.filter(
       p =>
         p.name.toLowerCase().includes(q) ||
         p.barcode?.includes(q),
     );
-  }, [state.products, search]);
+  }, [state.products, search, filterTab]);
 
   const renderItem = ({item}: {item: Product}) => {
     const calc = calculateProduct(item);
@@ -309,9 +368,11 @@ export default function ProductsScreen() {
             )}
           </View>
 
-          <Text style={ps.cat}>
-            {isSatuanMode ? 'Modal / Harga Beli:' : 'Modal Total:'} {formatRupiah(item.buyPrice || calc.totalModal)}
-          </Text>
+          {!isSatuanMode && (
+            <Text style={ps.cat}>
+              Modal Total: {formatRupiah(calc.totalModal)}
+            </Text>
+          )}
 
           {item.sellPrice > 0 && (
             <View style={ps.priceRow}>
@@ -365,6 +426,24 @@ export default function ProductsScreen() {
             <Text style={ps.selectModeTxt}>{isSelectMode ? 'Batal' : 'Pilih Multiple'}</Text>
           </TouchableOpacity>
         )}
+      </View>
+
+      <View style={ps.filterTabsRow}>
+        <TouchableOpacity 
+          style={[ps.filterTab, filterTab === 'all' && ps.filterTabActive]} 
+          onPress={() => setFilterTab('all')}>
+          <Text style={[ps.filterTabTxt, filterTab === 'all' && ps.filterTabTxtActive]}>Semua</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[ps.filterTab, filterTab === 'unsold' && ps.filterTabActive]} 
+          onPress={() => setFilterTab('unsold')}>
+          <Text style={[ps.filterTabTxt, filterTab === 'unsold' && ps.filterTabTxtActive]}>Belum Terjual</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[ps.filterTab, filterTab === 'sold' && ps.filterTabActive]} 
+          onPress={() => setFilterTab('sold')}>
+          <Text style={[ps.filterTabTxt, filterTab === 'sold' && ps.filterTabTxtActive]}>Sudah Terjual</Text>
+        </TouchableOpacity>
       </View>
 
       {isSelectMode && (
@@ -426,10 +505,10 @@ export default function ProductsScreen() {
         removeClippedSubviews={true}
         ListEmptyComponent={
           <View style={ps.empty}>
-            <Text style={ps.emptyIcon}>{search ? '🔍' : '📦'}</Text>
+            <Text style={ps.emptyIcon}>{search || filterTab !== 'all' ? '🔍' : '📦'}</Text>
             <Text style={ps.emptyTxt}>
-              {search
-                ? `Tidak ada produk "${search}"`
+              {search || filterTab !== 'all'
+                ? `Tidak ada produk yang sesuai dengan filter/pencarian`
                 : 'Belum ada produk. Tambah sekarang!'}
             </Text>
           </View>
@@ -441,6 +520,7 @@ export default function ProductsScreen() {
         visible={modalOpen}
         onClose={() => setModalOpen(false)}
         onSell={(p, q) => sellProduct(p.id, q)}
+        onUndo={(p, q) => undoSellProduct(p.id, q)}
         onDelete={id => removeProduct(id)}
         isSatuanMode={isSatuanMode}
       />
@@ -463,6 +543,34 @@ const ps = StyleSheet.create({
     borderColor: C.border,
   },
   selectModeTxt: {color: C.primary, fontSize: 13, fontWeight: '700'},
+  filterTabsRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: C.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 4,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  filterTabActive: {
+    backgroundColor: C.primary,
+  },
+  filterTabTxt: {
+    color: C.muted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterTabTxtActive: {
+    color: '#FFF',
+    fontWeight: '700',
+  },
   selectionBar: {
     flexDirection: 'row',
     alignItems: 'center',
