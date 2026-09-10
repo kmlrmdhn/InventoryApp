@@ -109,7 +109,7 @@ export default function ReportsScreen() {
   }, [products, sortBy]);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={['top', 'left', 'right']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={s.header}>
           <Text style={s.title}>📊 Laporan Keuangan</Text>

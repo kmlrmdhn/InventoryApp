@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { productsStyles as ps, productModalStyles as ms, C } from '../styles/globalStyles';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useProducts} from '../context/ProductContext';
 import {calculateProduct, formatRupiah, formatPercent, formatCurrencyInput, parseCurrencyInput} from '../utils/calculations';
 import {Product} from '../types';
@@ -38,6 +38,7 @@ function DetailModal({
   onDelete: (id: string) => void;
   isSatuanMode?: boolean;
 }) {
+  const insets = useSafeAreaInsets();
   const [qty, setQty] = useState('1');
   const [undoQty, setUndoQty] = useState('1');
   const [sellPriceInput, setSellPriceInput] = useState('');
@@ -148,7 +149,7 @@ function DetailModal({
             style={{width: '100%'}}
             contentContainerStyle={{flexGrow: 1, justifyContent: 'flex-end'}}
             keyboardShouldPersistTaps="handled">
-            <TouchableOpacity activeOpacity={1} style={ms.container}>
+            <TouchableOpacity activeOpacity={1} style={[ms.container, {paddingBottom: Math.max(insets.bottom, 16) + 16}]}>
             {/* Header */}
             <View style={ms.head}>
               <TouchableOpacity onPress={onClose} style={ms.closeBtn}>
@@ -435,7 +436,7 @@ export default function ProductsScreen() {
   };
 
   return (
-    <SafeAreaView style={ps.container}>
+    <SafeAreaView style={ps.container} edges={['top', 'left', 'right']}>
       <View style={ps.headerRow}>
         <View style={ps.header}>
           <Text style={ps.title}>📦 Daftar Produk</Text>

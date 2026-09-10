@@ -1,9 +1,9 @@
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Text, View, StyleSheet} from 'react-native';
+import {Text, View, StyleSheet, StatusBar} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {ProductProvider} from './src/context/ProductContext';
 import DashboardScreen from './src/screens/DashboardScreen';
 import ProductsScreen from './src/screens/ProductsScreen';
@@ -35,62 +35,76 @@ function TabIcon({name, focused}: {name: string; focused: boolean}) {
   );
 }
 
+function MainTabs() {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          backgroundColor: COLORS.tabBg,
+          borderTopColor: '#2A2A40',
+          borderTopWidth: 1,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 4,
+        },
+      }}>
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
+          tabBarIcon: ({focused}) => (
+            <TabIcon name="Dashboard" focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Produk"
+        component={ProductsScreen}
+        options={{
+          tabBarIcon: ({focused}) => (
+            <TabIcon name="Produk" focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Tambah"
+        component={AddProductScreen}
+        options={{
+          tabBarIcon: ({focused}) => (
+            <TabIcon name="Tambah" focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Laporan"
+        component={ReportsScreen}
+        options={{
+          tabBarIcon: ({focused}) => (
+            <TabIcon name="Laporan" focused={focused} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 function App(): React.JSX.Element {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent
+        />
         <ProductProvider>
           <NavigationContainer>
-            <Tab.Navigator
-              screenOptions={{
-                headerShown: false,
-                tabBarShowLabel: false,
-                tabBarStyle: {
-                  backgroundColor: COLORS.tabBg,
-                  borderTopColor: '#2A2A40',
-                  borderTopWidth: 1,
-                  height: 64,
-                  paddingBottom: 0,
-                  paddingTop: 0,
-                },
-              }}>
-              <Tab.Screen
-                name="Dashboard"
-                component={DashboardScreen}
-                options={{
-                  tabBarIcon: ({focused}) => (
-                    <TabIcon name="Dashboard" focused={focused} />
-                  ),
-                }}
-              />
-              <Tab.Screen
-                name="Produk"
-                component={ProductsScreen}
-                options={{
-                  tabBarIcon: ({focused}) => (
-                    <TabIcon name="Produk" focused={focused} />
-                  ),
-                }}
-              />
-              <Tab.Screen
-                name="Tambah"
-                component={AddProductScreen}
-                options={{
-                  tabBarIcon: ({focused}) => (
-                    <TabIcon name="Tambah" focused={focused} />
-                  ),
-                }}
-              />
-              <Tab.Screen
-                name="Laporan"
-                component={ReportsScreen}
-                options={{
-                  tabBarIcon: ({focused}) => (
-                    <TabIcon name="Laporan" focused={focused} />
-                  ),
-                }}
-              />
-            </Tab.Navigator>
+            <MainTabs />
           </NavigationContainer>
         </ProductProvider>
       </SafeAreaProvider>
