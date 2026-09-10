@@ -129,3 +129,9 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.name == 'clean' }) {
+        delete file('.cxx')
+    }
+}

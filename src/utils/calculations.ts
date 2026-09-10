@@ -4,7 +4,7 @@ export function calculateProduct(product: Product): ProductCalculation {
   // product.buyPrice is now Total Modal Keseluruhan for this product batch
   const totalModal = product.buyPrice;
   const unitBuyPrice = product.initialStock > 0 ? totalModal / product.initialStock : 0;
-  const totalRevenue = product.sellPrice * product.soldStock;
+  const totalRevenue = product.accumulatedRevenue ?? (product.sellPrice * product.soldStock);
   const targetRevenue = product.sellPrice * product.initialStock;
   const netPnl = totalRevenue - totalModal;
   const isBEP = totalRevenue >= totalModal;
@@ -48,8 +48,8 @@ export function calculateDashboard(
   if (mode === 'satuan') {
     products.forEach(product => {
       calculatedModal += product.buyPrice;
-      if (product.soldStock > 0 && product.sellPrice > 0) {
-        totalRevenue += product.sellPrice * product.soldStock;
+      if (product.soldStock > 0) {
+        totalRevenue += product.accumulatedRevenue ?? (product.sellPrice * product.soldStock);
       }
       if (product.soldStock > 0) {
         totalSoldItems += product.soldStock;

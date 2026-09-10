@@ -10,11 +10,13 @@ import {
   Image,
   Modal,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { productsStyles as ps, productModalStyles as ms, C } from '../styles/globalStyles';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useProducts} from '../context/ProductContext';
-import {calculateProduct, formatRupiah, formatPercent} from '../utils/calculations';
+import {calculateProduct, formatRupiah, formatPercent, formatCurrencyInput, parseCurrencyInput} from '../utils/calculations';
 import {Product} from '../types';
 
 
@@ -31,13 +33,21 @@ function DetailModal({
   product: Product | null;
   visible: boolean;
   onClose: () => void;
-  onSell: (p: Product, qty: number) => void;
+  onSell: (p: Product, qty: number, customSellPrice?: number) => void;
   onUndo: (p: Product, qty: number) => void;
   onDelete: (id: string) => void;
   isSatuanMode?: boolean;
 }) {
   const [qty, setQty] = useState('1');
   const [undoQty, setUndoQty] = useState('1');
+  const [sellPriceInput, setSellPriceInput] = useState('');
+  
+  React.useEffect(() => {
+    if (product) {
+      setSellPriceInput(product.sellPrice > 0 ? formatCurrencyInput(product.sellPrice) : '');
+    }
+  }, [product]);
+
   if (!product) {return null;}
   const calc = calculateProduct(product);
 
@@ -51,15 +61,25 @@ function DetailModal({
       Alert.alert('Error', `Stok tidak cukup. Sisa: ${calc.remainingStock}`);
       return;
     }
+
+    let sp = product.sellPrice;
+    const spInput = parseCurrencyInput(sellPriceInput);
+    if (!isNaN(spInput) && spInput >= 0) {
+      sp = spInput;
+    } else {
+      Alert.alert('Error', 'Masukkan harga jual yang valid');
+      return;
+    }
+
     Alert.alert(
       'Konfirmasi Penjualan',
-      `Jual ${q} ${product.unit} "${product.name}"?\nTotal: ${formatRupiah(q * product.sellPrice)}`,
+      `Jual ${q} ${product.unit} "${product.name}"?\nTotal: ${formatRupiah(q * sp)}`,
       [
         {text: 'Batal', style: 'cancel'},
         {
           text: 'Jual ✓',
           onPress: () => {
-            onSell(product, q);
+            onSell(product, q, sp);
             setQty('1');
             onClose();
           },
@@ -116,14 +136,19 @@ function DetailModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <TouchableOpacity
-        style={ms.overlay}
-        activeOpacity={1}
-        onPress={onClose}>
-        <ScrollView
-          style={{width: '100%'}}
-          contentContainerStyle={{flexGrow: 1, justifyContent: 'flex-end'}}>
-          <TouchableOpacity activeOpacity={1} style={ms.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        style={{flex: 1}}
+      >
+        <TouchableOpacity
+          style={ms.overlay}
+          activeOpacity={1}
+          onPress={onClose}>
+          <ScrollView
+            style={{width: '100%'}}
+            contentContainerStyle={{flexGrow: 1, justifyContent: 'flex-end'}}
+            keyboardShouldPersistTaps="handled">
+            <TouchableOpacity activeOpacity={1} style={ms.container}>
             {/* Header */}
             <View style={ms.head}>
               <TouchableOpacity onPress={onClose} style={ms.closeBtn}>
@@ -160,7 +185,10 @@ function DetailModal({
             <View style={ms.grid}>
               {isSatuanMode ? (
                 [
+                  {label: 'Harga Beli / Unit', val: product.buyPrice > 0 ? formatRupiah(product.buyPrice) : '-', color: C.text},
                   {label: 'Harga Jual / Unit', val: product.sellPrice > 0 ? formatRupiah(product.sellPrice) : '-', color: C.primary},
+                  {label: 'Terjual', val: `${product.soldStock} unit`, color: C.warning},
+                  {label: 'Pendapatan Terkumpul', val: formatRupiah(calc.totalRevenue), color: C.success},
                 ].map((item, i) => (
                   <View key={i} style={[ms.gridItem, {width: '48%'}]}>
                     <Text style={ms.gridLabel}>{item.label}</Text>
@@ -193,7 +221,7 @@ function DetailModal({
                 ))
               )}
 
-              {true && (
+              {!isSatuanMode && (
                 <View
                   style={[
                     ms.gridItem,
@@ -222,6 +250,19 @@ function DetailModal({
             {calc.remainingStock > 0 && (
               <View style={ms.sellBox}>
                 <Text style={ms.sellLabel}>Catat Penjualan</Text>
+                
+                <View style={{ marginBottom: 12 }}>
+                   <Text style={{ fontSize: 13, color: C.text, marginBottom: 6 }}>Harga Jual Aktual</Text>
+                   <TextInput
+                     style={ms.sellInput}
+                     value={sellPriceInput}
+                     onChangeText={text => setSellPriceInput(formatCurrencyInput(text))}
+                     keyboardType="numeric"
+                     placeholder="Harga Jual"
+                     placeholderTextColor={C.muted}
+                   />
+                </View>
+                
                 <View style={ms.sellRow}>
                   <TextInput
                     style={ms.sellInput}
@@ -264,6 +305,7 @@ function DetailModal({
           </TouchableOpacity>
         </ScrollView>
       </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -509,7 +551,7 @@ export default function ProductsScreen() {
         product={selected}
         visible={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSell={(p, q) => sellProduct(p.id, q)}
+        onSell={(p, q, sp) => sellProduct(p.id, q, sp)}
         onUndo={(p, q) => undoSellProduct(p.id, q)}
         onDelete={id => removeProduct(id)}
         isSatuanMode={isSatuanMode}

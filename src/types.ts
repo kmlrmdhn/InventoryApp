@@ -9,6 +9,7 @@ export interface Product {
   sellPrice: number;
   initialStock: number;
   soldStock: number;
+  accumulatedRevenue?: number;
   description?: string;
   createdAt: string;
   updatedAt: string;

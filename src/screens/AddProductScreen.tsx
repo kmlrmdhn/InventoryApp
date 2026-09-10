@@ -62,7 +62,7 @@ export default function AddProductScreen() {
     if (!form.name.trim()) { Alert.alert('Error', 'Nama barang harus diisi!'); return; }
 
     if (isSatuanMode) {
-      if (!parsedSellPrice) { Alert.alert('Error', 'Harga jual / unit harus diisi!'); return; }
+      if (!parsedBuyPrice) { Alert.alert('Error', 'Harga beli / unit harus diisi!'); return; }
     } else {
       if (!parsedSellPrice) { Alert.alert('Error', 'Harga jual per unit harus diisi!'); return; }
       if (!form.initialStock) { Alert.alert('Error', 'Stok awal harus diisi!'); return; }
@@ -78,7 +78,7 @@ export default function AddProductScreen() {
         category: 'Lainnya',
         unit: 'pcs',
         buyPrice: parsedBuyPrice,
-        sellPrice: parsedSellPrice,
+        sellPrice: isSatuanMode ? 0 : parsedSellPrice,
         initialStock: isSatuanMode ? 1 : (parseInt(form.initialStock, 10) || 1),
         soldStock: 0,
       });
@@ -133,41 +133,41 @@ export default function AddProductScreen() {
             />
           </View>
 
-          {/* Modal / Harga Beli (Hanya di Mode Batch) */}
+          {/* Harga Beli / Modal */}
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>💸 {isSatuanMode ? 'HARGA BELI' : 'MODAL / HARGA BELI'}</Text>
+            <Text style={s.label}>{isSatuanMode ? 'Harga Beli / Unit *' : 'Total Modal Beli (Opsional)'}</Text>
+            <View style={s.currencyBox}>
+              <Text style={s.currencyPrefix}>Rp</Text>
+              <TextInput
+                style={s.currencyInput}
+                placeholder={isSatuanMode ? "Masukkan Harga Beli / Unit" : "Masukkan Harga Beli Modal"}
+                placeholderTextColor={C.muted}
+                value={form.buyPrice}
+                onChangeText={v => set('buyPrice', formatCurrencyInput(v))}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* Harga Jual (Hanya di Mode Batch) */}
           {!isSatuanMode && (
             <View style={s.section}>
-              <Text style={s.sectionTitle}>💸 MODAL / HARGA BELI</Text>
-              <Text style={s.label}>Total Modal Beli (Opsional)</Text>
+              <Text style={s.sectionTitle}>💰 HARGA JUAL</Text>
+              <Text style={s.label}>Harga Jual / Unit *</Text>
               <View style={s.currencyBox}>
                 <Text style={s.currencyPrefix}>Rp</Text>
                 <TextInput
                   style={s.currencyInput}
-                  placeholder="Masukkan Harga Beli Modal"
+                  placeholder="Masukkan Harga Jual"
                   placeholderTextColor={C.muted}
-                  value={form.buyPrice}
-                  onChangeText={v => set('buyPrice', formatCurrencyInput(v))}
+                  value={form.sellPrice}
+                  onChangeText={v => set('sellPrice', formatCurrencyInput(v))}
                   keyboardType="numeric"
                 />
               </View>
             </View>
           )}
-
-          {/* Harga Jual */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>💰 HARGA JUAL</Text>
-            <Text style={s.label}>Harga Jual / Unit *</Text>
-            <View style={s.currencyBox}>
-              <Text style={s.currencyPrefix}>Rp</Text>
-              <TextInput
-                style={s.currencyInput}
-                placeholder="Masukkan Harga Jual"
-                placeholderTextColor={C.muted}
-                value={form.sellPrice}
-                onChangeText={v => set('sellPrice', formatCurrencyInput(v))}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
 
           {/* Stok (Hanya di Mode Batch) */}
           {!isSatuanMode && (

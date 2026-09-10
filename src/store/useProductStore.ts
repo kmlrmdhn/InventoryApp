@@ -50,7 +50,7 @@ interface ProductState {
   addProduct: (productData: Omit<Product, 'createdAt' | 'updatedAt'>) => void;
   editProduct: (product: Product) => void;
   removeProduct: (id: string) => void;
-  sellProduct: (productId: string, quantity: number) => void;
+  sellProduct: (productId: string, quantity: number, customSellPrice?: number) => void;
   undoSellProduct: (productId: string, quantity: number) => void;
   addTransaction: (transaction: Transaction) => void;
   getProductByBarcode: (barcode: string) => Product | null;
@@ -387,12 +387,14 @@ export const useProductStore = create<ProductState>()(
           );
         },
 
-        sellProduct: (productId, quantity) => {
+        sellProduct: (productId, quantity, customSellPrice) => {
           const now = new Date().toISOString();
           set((state) =>
             syncActiveDashboard(state, (dash) => {
               const product = dash.products.find(p => p.id === productId);
               if (!product) return {};
+              
+              const finalSellPrice = customSellPrice !== undefined ? customSellPrice : product.sellPrice;
               
               const unitBuyPrice = product.initialStock > 0 ? product.buyPrice / product.initialStock : product.buyPrice;
               const transaction: Transaction = {
@@ -401,16 +403,19 @@ export const useProductStore = create<ProductState>()(
                 productName: product.name,
                 quantity,
                 buyPrice: unitBuyPrice,
-                sellPrice: product.sellPrice,
-                profit: (product.sellPrice - unitBuyPrice) * quantity,
+                sellPrice: finalSellPrice,
+                profit: (finalSellPrice - unitBuyPrice) * quantity,
                 type: 'sale',
                 date: now,
               };
 
+              const currentAccRev = product.accumulatedRevenue ?? (product.sellPrice * product.soldStock);
+              const newAccRev = currentAccRev + (finalSellPrice * quantity);
+
               return {
                 products: dash.products.map((p) =>
                   p.id === productId
-                    ? { ...p, soldStock: p.soldStock + quantity, updatedAt: now }
+                    ? { ...p, soldStock: p.soldStock + quantity, sellPrice: finalSellPrice, accumulatedRevenue: newAccRev, updatedAt: now }
                     : p,
                 ),
                 transactions: [transaction, ...(dash.transactions || [])],
@@ -431,14 +436,17 @@ export const useProductStore = create<ProductState>()(
 
               let remainingToUndo = actualQuantityToUndo;
               let newTransactions = [...(dash.transactions || [])];
+              let revenueToUndo = 0;
               
               for (let i = 0; i < newTransactions.length; i++) {
                 if (newTransactions[i].productId === productId && newTransactions[i].type === 'sale') {
                   if (newTransactions[i].quantity <= remainingToUndo) {
+                     revenueToUndo += newTransactions[i].sellPrice * newTransactions[i].quantity;
                      remainingToUndo -= newTransactions[i].quantity;
                      newTransactions.splice(i, 1);
                      i--; 
                   } else {
+                     revenueToUndo += newTransactions[i].sellPrice * remainingToUndo;
                      newTransactions[i] = {
                        ...newTransactions[i],
                        quantity: newTransactions[i].quantity - remainingToUndo,
@@ -450,10 +458,13 @@ export const useProductStore = create<ProductState>()(
                 if (remainingToUndo <= 0) break;
               }
 
+              const currentAccRev = product.accumulatedRevenue ?? (product.sellPrice * product.soldStock);
+              const newAccRev = Math.max(0, currentAccRev - revenueToUndo);
+
               return {
                 products: dash.products.map((p) =>
                   p.id === productId
-                    ? { ...p, soldStock: p.soldStock - actualQuantityToUndo, updatedAt: now }
+                    ? { ...p, soldStock: p.soldStock - actualQuantityToUndo, accumulatedRevenue: newAccRev, updatedAt: now }
                     : p,
                 ),
                 transactions: newTransactions,
